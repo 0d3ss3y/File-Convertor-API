@@ -70,10 +70,13 @@ def convert():
                     result = docx_to_pdf(dir_input=dir_from, dir_out=dir_out, name=name)
                 else:
                     return jsonify({"error": "Unsupported document format conversion requested"}), 400
-                
+            
+            case "Video":
+                result = video_conversion()
+
             case "Audio":
                 result = audio_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
-                
+
             case _:
                 return jsonify({"error": "Unsupported category"}), 400
 
