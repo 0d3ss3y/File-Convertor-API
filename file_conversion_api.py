@@ -1,13 +1,15 @@
 from flask import Flask, request, jsonify
 import aspose.words as aw
+import ffmpeg
 from pydub import AudioSegment
 from PIL import Image
 import os
 
 app = Flask(__name__)
 
-def pdf_to_docx(dir_input, dir_out, name):
+def pdf_to_docx(dir_input, name):
     income_pdf = dir_input
+    dir_out = "convertor\File\Saver\DOCX"
     outcome_docx = os.path.join(dir_out, name + ".docx")
     doc = aw.Document(income_pdf)
     
@@ -18,8 +20,9 @@ def pdf_to_docx(dir_input, dir_out, name):
     doc.save(outcome_docx, options)
     return 200    
 
-def docx_to_pdf(dir_input, dir_out, name):
+def docx_to_pdf(dir_input, name):
     income_docx = dir_input
+    dir_out = "convertor\File\Saver\PDF"
     outcome_pdf = os.path.join(dir_out, name + ".pdf")
     
     doc = aw.Document(income_docx)
@@ -47,6 +50,15 @@ def image_conversion(dir_input, name, target_ext):
     img.save(output_path)
     return 200
 
+def video_conversion(dir_input, name, target_ext):
+    dir_out = "convertor/File/Saver/video"
+    os.makedirs(dir_out, exist_ok=True)
+    
+    output_path = os.path.join(dir_out, f"{name}.{target_ext}")
+    ffmpeg.input(dir_input).output(output_path).run()
+    return 200
+
+
 @app.route('/convert', methods=['GET'])
 def convert():
     category = request.args.get('category')
@@ -64,9 +76,9 @@ def convert():
 
             case "Document":
                 if ext_to == "docx":
-                    result = pdf_to_docx(dir_input=dir_from, dir_out=dir_out, name=name)
+                    result = pdf_to_docx(dir_input=dir_from, name=name)
                 elif ext_to == "pdf":
-                    result = docx_to_pdf(dir_input=dir_from, dir_out=dir_out, name=name)
+                    result = docx_to_pdf(dir_input=dir_from, name=name)
                 else:
                     return jsonify({"error": "Unsupported document format conversion requested"}), 400
             
