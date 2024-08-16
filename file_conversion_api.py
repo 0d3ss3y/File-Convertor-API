@@ -2,14 +2,32 @@ from flask import Flask, request, jsonify
 import aspose.words as aw
 import ffmpeg
 from pydub import AudioSegment
+from pathlib import Path
 from PIL import Image
 import os
 
 app = Flask(__name__)
 
+def get_downloads_folder():
+    if os.name == 'nt':  # Windows
+        return str(Path(os.environ['USERPROFILE']) / 'Downloads')
+    elif os.name == 'posix':
+        return str(Path.home() / 'Downloads')
+    else:
+        raise EnvironmentError("Unsupported operating system")
+    
+def generate_unique_filename(dir_path, base_name, extension):
+    i = 1
+    filename = f"{base_name}.{extension}"
+    while os.path.exists(os.path.join(dir_path, filename)):
+        filename = f"{base_name}_{i}.{extension}"
+        i += 1
+    return filename
+
 def pdf_to_docx(dir_input, name):
     income_pdf = dir_input
-    dir_out = "convertor\File\Saver\DOCX"
+    dir_out = os.path.join("convertor", "File", "Saver", "DOCX")
+    os.makedirs(dir_out, exist_ok=True)
     outcome_docx = os.path.join(dir_out, name + ".docx")
     doc = aw.Document(income_pdf)
     
@@ -22,7 +40,8 @@ def pdf_to_docx(dir_input, name):
 
 def docx_to_pdf(dir_input, name):
     income_docx = dir_input
-    dir_out = "convertor\File\Saver\PDF"
+    dir_out = os.path.join("convertor", "File", "Saver", "PDF")
+    os.makedirs(dir_out, exist_ok=True)
     outcome_pdf = os.path.join(dir_out, name + ".pdf")
     
     doc = aw.Document(income_docx)
@@ -34,7 +53,8 @@ def docx_to_pdf(dir_input, name):
 
 def audio_conversion(dir_input, name, target_ext):
     audio = AudioSegment.from_file(dir_input)
-    dir_out = "convertor/File/Saver/Audio"
+
+    #dir_out = os.path.join("convertor", "File", "Saver", "Audio")
     os.makedirs(dir_out, exist_ok=True)
     
     output_path = os.path.join(dir_out, f"{name}.{target_ext}")
@@ -42,16 +62,30 @@ def audio_conversion(dir_input, name, target_ext):
     return 200
 
 def image_conversion(dir_input, name, target_ext):
-    dir_out = "convertor/File/Saver/Image"
-    os.makedirs(dir_out, exist_ok=True)
-    
-    img = Image.open(dir_input)
-    output_path = os.path.join(dir_out, f"{name}.{target_ext}")
-    img.save(output_path)
-    return 200
+    try:
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        
+        img = Image.open(dir_input)
+        
+        unique_filename = generate_unique_filename(dir_out, name, target_ext)
+        output_path = os.path.join(dir_out, unique_filename)
+        
+        print(f"Saving image to: {output_path}")
+        
+        if target_ext.lower() in ['jpg', 'jpeg']:
+            img = img.convert('RGB')
+        
+        img.save(output_path)
+        return 200
+    except Exception as e:
+        print(f"Error saving image: {str(e)}")
+        return 500
+
+
 
 def video_conversion(dir_input, name, target_ext):
-    dir_out = "convertor/File/Saver/video"
+    dir_out = os.path.join("convertor", "File", "Saver", "Video")
     os.makedirs(dir_out, exist_ok=True)
     
     output_path = os.path.join(dir_out, f"{name}.{target_ext}")
@@ -83,7 +117,7 @@ def convert():
                     return jsonify({"error": "Unsupported document format conversion requested"}), 400
             
             case "Video":
-                result = video_conversion()
+                result = video_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
 
             case "Audio":
                 result = audio_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
