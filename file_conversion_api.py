@@ -53,7 +53,6 @@ def convert():
     name = request.args.get('name')
     ext_to = request.args.get('to')
     dir_from = request.args.get('pathway')
-    dir_out = request.args.get('output_path', '') 
 
     try:
         if not category or not name or not ext_to or not dir_from:
