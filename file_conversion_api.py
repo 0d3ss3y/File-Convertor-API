@@ -26,7 +26,7 @@ def generate_unique_filename(dir_path, base_name, extension):
 
 def pdf_to_docx(dir_input, name):
     income_pdf = dir_input
-    dir_out = os.path.join("convertor", "File", "Saver", "DOCX")
+    dir_out = get_downloads_folder()
     os.makedirs(dir_out, exist_ok=True)
     outcome_docx = os.path.join(dir_out, name + ".docx")
     doc = aw.Document(income_pdf)
@@ -40,23 +40,62 @@ def pdf_to_docx(dir_input, name):
 
 def docx_to_pdf(dir_input, name):
     income_docx = dir_input
-    dir_out = os.path.join("convertor", "File", "Saver", "PDF")
+    dir_out = get_downloads_folder()
     os.makedirs(dir_out, exist_ok=True)
     outcome_pdf = os.path.join(dir_out, name + ".pdf")
-    
     doc = aw.Document(income_docx)
-    
     options = aw.saving.PdfSaveOptions()
-    
     doc.save(outcome_pdf, options)
     return 200
 
-def audio_conversion(dir_input, name, target_ext):
-    audio = AudioSegment.from_file(dir_input)
-
-    #dir_out = os.path.join("convertor", "File", "Saver", "Audio")
+def txt_to_docx(dir_input,name):
+    income_pdf = dir_input
+    dir_out = get_downloads_folder()
     os.makedirs(dir_out, exist_ok=True)
+    outcome_docx = os.path.join(dir_out, name + ".docx")
+    doc = aw.Document(income_pdf)
     
+    options = aw.saving.DocSaveOptions(aw.SaveFormat.DOCX)
+    options.mode = aw.saving.DocSaveOptions.RecognitionMode.TEXT_FLOW
+    options.relative_horizontal_proximity = 2.5
+    options.recognize_bullets = True
+    doc.save(outcome_docx, options)
+    return 200
+
+def txt_to_pdf(dir_input,name):
+    income_docx = dir_input
+    dir_out = get_downloads_folder()
+    os.makedirs(dir_out, exist_ok=True)
+    outcome_pdf = os.path.join(dir_out, name + ".pdf")
+    doc = aw.Document(income_docx)
+    options = aw.saving.PdfSaveOptions()
+    doc.save(outcome_pdf, options)
+    return 200
+
+def docx_to_txt(dir_input,name):
+    income_txt = dir_input
+    dir_out = get_downloads_folder()
+    os.makedirs(dir_out, exist_ok=True)
+    outcome_txt = os.path.join(dir_out, name + ".txt")
+    txt = aw.Document(income_txt)
+    options = aw.saving.TxtSaveOptions()
+    txt.save(outcome_txt,options)
+    return 200 
+
+def pdf_to_txt(dir_input,name):
+    income_txt = dir_input
+    dir_out = get_downloads_folder()
+    os.makedirs(dir_out, exist_ok=True)
+    outcome_txt = os.path.join(dir_out, name + ".txt")
+    txt = aw.Document(income_txt)
+    options = aw.saving.TxtSaveOptions()
+    txt.save(outcome_txt,options)
+    return 200
+
+def audio_conversion(dir_input, name, target_ext):
+    dir_out = get_downloads_folder()
+    os.makedirs(dir_out, exist_ok=True)
+    audio = AudioSegment.from_file(dir_input)
     output_path = os.path.join(dir_out, f"{name}.{target_ext}")
     audio.export(output_path, format=target_ext)
     return 200
@@ -82,12 +121,9 @@ def image_conversion(dir_input, name, target_ext):
         print(f"Error saving image: {str(e)}")
         return 500
 
-
-
 def video_conversion(dir_input, name, target_ext):
-    dir_out = os.path.join("convertor", "File", "Saver", "Video")
+    dir_out = get_downloads_folder()
     os.makedirs(dir_out, exist_ok=True)
-    
     output_path = os.path.join(dir_out, f"{name}.{target_ext}")
     ffmpeg.input(dir_input).output(output_path).run()
     return 200
@@ -97,6 +133,7 @@ def video_conversion(dir_input, name, target_ext):
 def convert():
     category = request.args.get('category')
     name = request.args.get('name')
+    ext_from = request.args.get('from')
     ext_to = request.args.get('to')
     dir_from = request.args.get('pathway')
 
@@ -106,21 +143,50 @@ def convert():
 
         match category:
             case "Image":
-                result = image_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
-
+                if ext_to.lower() in ['jpg', 'jpeg', 'png', 'bmp', 'gif']:
+                    result = image_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
+                else:
+                    return jsonify({"error": "Unsupported image format"}), 400
+                
             case "Document":
                 if ext_to == "docx":
-                    result = pdf_to_docx(dir_input=dir_from, name=name)
+                    if ext_from == "pdf":
+                        result = pdf_to_docx(dir_input=dir_from, name=name)
+                    elif ext_from == "txt":
+                        result = txt_to_docx(dir_input=dir_from, name=name)
+                    else:
+                        return jsonify({"error": "Unsupported source document format"}), 400
+                
                 elif ext_to == "pdf":
-                    result = docx_to_pdf(dir_input=dir_from, name=name)
+                    if ext_from == "docx":
+                        result = docx_to_pdf(dir_input=dir_from, name=name)
+                    elif ext_from == "txt":
+                        result = txt_to_pdf(dir_input=dir_from, name=name)
+                    else:
+                        return jsonify({"error": "Unsupported source document format"}), 400
+                
+                elif ext_to == "txt":
+                    if ext_from == "pdf":
+                        result = pdf_to_txt(dir_input=dir_from, name=name)   
+                    elif ext_from == "docx":
+                        result = docx_to_txt(dir_input=dir_from, name=name)
+                    else:
+                        return jsonify({"error": "Unsupported source document format"}), 400
+                
                 else:
                     return jsonify({"error": "Unsupported document format conversion requested"}), 400
             
             case "Video":
-                result = video_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
-
+                if ext_to.lower() in ['mp4', 'avi', 'mkv', 'mov']:
+                    result = video_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
+                else:
+                    return jsonify({"error": "Unsupported video format"}), 400
+                
             case "Audio":
-                result = audio_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
+                if ext_to.lower() in ['mp3', 'wav', 'flac', 'aac']:
+                    result = audio_conversion(dir_input=dir_from, name=name, target_ext=ext_to)
+                else:
+                    return jsonify({"error": "Unsupported audio format"}), 400
 
             case _:
                 return jsonify({"error": "Unsupported category"}), 400
