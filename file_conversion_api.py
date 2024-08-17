@@ -51,61 +51,104 @@ def pdf_to_docx(dir_input, name):
         print(f"Error in pdf_to_docx: {str(e)}")
         return 500
 
-   
-
 def docx_to_pdf(dir_input, name):
-    income_docx = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_pdf = os.path.join(dir_out, name + ".pdf")
-    doc = aw.Document(income_docx)
-    options = aw.saving.PdfSaveOptions()
-    doc.save(outcome_pdf, options)
-    return 200
-
+    try:
+        income_pdf = dir_input
+        if not os.path.exists(income_pdf):
+            raise FileNotFoundError(f"File not found: {dir_input}")
+        
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        
+        outcome_pdf = os.path.join(dir_out, name + ".pdf")
+        print(f"Saving DOCX to: {outcome_pdf}")
+        doc = aw.Document(income_pdf)
+        options = aw.saving.PdfSaveOptions()
+        doc.save(outcome_pdf, options)
+        return 200
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in docx_to_pdf: {str(e)}")
+        return 500
+                
 def txt_to_docx(dir_input,name):
-    income_pdf = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_docx = os.path.join(dir_out, name + ".docx")
-    doc = aw.Document(income_pdf)
+    try:
+        income_pdf = dir_input
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        outcome_docx = os.path.join(dir_out, name + ".docx")
+        doc = aw.Document(income_pdf)
+        
+        options = aw.saving.DocSaveOptions(aw.SaveFormat.DOCX)
+        options.mode = aw.saving.DocSaveOptions.RecognitionMode.TEXT_FLOW
+        options.relative_horizontal_proximity = 2.5
+        options.recognize_bullets = True
+        doc.save(outcome_docx, options)
+        return 200
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in pdf_to_docx: {str(e)}")
+        return 500
     
-    options = aw.saving.DocSaveOptions(aw.SaveFormat.DOCX)
-    options.mode = aw.saving.DocSaveOptions.RecognitionMode.TEXT_FLOW
-    options.relative_horizontal_proximity = 2.5
-    options.recognize_bullets = True
-    doc.save(outcome_docx, options)
-    return 200
-
 def txt_to_pdf(dir_input,name):
-    income_docx = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_pdf = os.path.join(dir_out, name + ".pdf")
-    doc = aw.Document(income_docx)
-    options = aw.saving.PdfSaveOptions()
-    doc.save(outcome_pdf, options)
-    return 200
+    try:
+        income_pdf = dir_input
+        if not os.path.exists(income_pdf):
+            raise FileNotFoundError(f"File not found: {dir_input}")
+        
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        
+        outcome_pdf = os.path.join(dir_out, name + ".pdf")
+        print(f"Saving DOCX to: {outcome_pdf}")
+        doc = aw.Document(income_pdf)
+        options = aw.saving.PdfSaveOptions()
+        doc.save(outcome_pdf, options)
+        return 200
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in txt_to_pdf: {str(e)}")
+        return 500
 
 def docx_to_txt(dir_input,name):
-    income_txt = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_txt = os.path.join(dir_out, name + ".txt")
-    txt = aw.Document(income_txt)
-    options = aw.saving.TxtSaveOptions()
-    txt.save(outcome_txt,options)
-    return 200 
+    try:        
+        income_txt = dir_input
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        outcome_txt = os.path.join(dir_out, name + ".txt")
+        txt = aw.Document(income_txt)
+        options = aw.saving.TxtSaveOptions()
+        txt.save(outcome_txt,options)
+        return 200 
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in docx_to_txt: {str(e)}")
+        return 500
 
 def pdf_to_txt(dir_input,name):
-    income_txt = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_txt = os.path.join(dir_out, name + ".txt")
-    txt = aw.Document(income_txt)
-    options = aw.saving.TxtSaveOptions()
-    txt.save(outcome_txt,options)
-    return 200
+    try:
+        income_txt = dir_input
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        outcome_txt = os.path.join(dir_out, name + ".txt")
+        txt = aw.Document(income_txt)
+        options = aw.saving.TxtSaveOptions()
+        txt.save(outcome_txt,options)
+        return 200
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in pdf_to_txt: {str(e)}")
+        return 500        
 
 def audio_conversion(dir_input, name, target_ext):
     dir_out = get_downloads_folder()
