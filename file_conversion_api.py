@@ -25,18 +25,33 @@ def generate_unique_filename(dir_path, base_name, extension):
     return filename
 
 def pdf_to_docx(dir_input, name):
-    income_pdf = dir_input
-    dir_out = get_downloads_folder()
-    os.makedirs(dir_out, exist_ok=True)
-    outcome_docx = os.path.join(dir_out, name + ".docx")
-    doc = aw.Document(income_pdf)
-    
-    options = aw.saving.DocSaveOptions(aw.SaveFormat.DOCX)
-    options.mode = aw.saving.DocSaveOptions.RecognitionMode.TEXT_FLOW
-    options.relative_horizontal_proximity = 2.5
-    options.recognize_bullets = True
-    doc.save(outcome_docx, options)
-    return 200    
+    try:
+        if not os.path.exists(dir_input):
+            raise FileNotFoundError(f"File not found: {dir_input}")
+        
+        dir_out = get_downloads_folder()
+        os.makedirs(dir_out, exist_ok=True)
+        
+        outcome_docx = os.path.join(dir_out, name + ".docx")
+        print(f"Saving DOCX to: {outcome_docx}")
+        doc = aw.Document(dir_input)
+        
+        options = aw.saving.DocSaveOptions(aw.SaveFormat.DOCX)
+        options.mode = aw.saving.DocSaveOptions.RecognitionMode.TEXT_FLOW
+        options.relative_horizontal_proximity = 2.5
+        options.recognize_bullets = True
+        doc.save(outcome_docx, options)
+        print(f"File saved successfully: {outcome_docx}")
+
+        return 200
+    except FileNotFoundError as fnf_error:
+        print(f"FileNotFoundError: {fnf_error}")
+        return 404
+    except Exception as e:
+        print(f"Error in pdf_to_docx: {str(e)}")
+        return 500
+
+   
 
 def docx_to_pdf(dir_input, name):
     income_docx = dir_input
@@ -136,6 +151,8 @@ def convert():
     ext_from = request.args.get('from')
     ext_to = request.args.get('to')
     dir_from = request.args.get('pathway')
+    
+    print(f"Category: {category}, Name: {name}, From: {ext_from}, To: {ext_to}, Pathway: {dir_from}")
 
     try:
         if not category or not name or not ext_to or not dir_from:
@@ -149,26 +166,26 @@ def convert():
                     return jsonify({"error": "Unsupported image format"}), 400
                 
             case "Document":
-                if ext_to == "docx":
-                    if ext_from == "pdf":
+                if ext_to == "DOCX":
+                    if ext_from == "PDF":
                         result = pdf_to_docx(dir_input=dir_from, name=name)
-                    elif ext_from == "txt":
+                    elif ext_from == "TXT":
                         result = txt_to_docx(dir_input=dir_from, name=name)
                     else:
                         return jsonify({"error": "Unsupported source document format"}), 400
                 
-                elif ext_to == "pdf":
-                    if ext_from == "docx":
+                elif ext_to == "PDF":
+                    if ext_from == "DOCX":
                         result = docx_to_pdf(dir_input=dir_from, name=name)
-                    elif ext_from == "txt":
+                    elif ext_from == "TXT":
                         result = txt_to_pdf(dir_input=dir_from, name=name)
                     else:
                         return jsonify({"error": "Unsupported source document format"}), 400
                 
-                elif ext_to == "txt":
-                    if ext_from == "pdf":
+                elif ext_to == "TXT":
+                    if ext_from == "PDF":
                         result = pdf_to_txt(dir_input=dir_from, name=name)   
-                    elif ext_from == "docx":
+                    elif ext_from == "DOCX":
                         result = docx_to_txt(dir_input=dir_from, name=name)
                     else:
                         return jsonify({"error": "Unsupported source document format"}), 400
@@ -193,7 +210,7 @@ def convert():
 
         return jsonify({"result": result}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "SERVER Error"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
